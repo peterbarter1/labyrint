@@ -125,6 +125,12 @@
       gameArea.style.display = "block";
       updateUI();
     }
+    unction startGame(character) {
+  characterSelect.style.display = "none";
+  gameArea.style.display = "block";
+  generateLabyrinthGrid(); // bez této řádky se mřížka nikdy nevykreslí
+  updateUI();
+    }
 
     function updateUI() {
       playerNum.textContent = currentPlayer + 1;
