@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Digitální Labyrint</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #1e1e1e;
+      color: white;
+      overflow: hidden;
+    }
+
+    #loadingScreen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: black url('tiles/cross.png') center center no-repeat;
+      background-size: 200px 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    #characterSelect {
+      display: none;
+      text-align: center;
+      padding-top: 50px;
+    }
+
+    .character {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px;
+      border: 2px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .character img {
+      width: 64px;
+      height: 64px;
+      image-rendering: pixelated;
+    }
+
+    #gameArea {
+      display: none;
+      text-align: center;
+      padding-top: 40px;
+    }
+
+    #treasureDisplay {
+      font-size: 24px;
+      margin-top: 20px;
+    }
+
+    #endTurnBtn {
+      margin-top: 30px;
+      padding: 10px 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loadingScreen">
+    <h1>Klikni pro spuštění</h1>
+  </div>
+
+  <div id="characterSelect">
+    <h2>Vyber si svou postavičku:</h2>
+    <div class="character" onclick="selectCharacter(0)">
+      <img src="characters/player_red.png" alt="Red">
+      <div>Červený</div>
+    </div>
+    <div class="character" onclick="selectCharacter(1)">
+      <img src="characters/player_blue.png" alt="Blue">
+      <div>Modrý</div>
+    </div>
+    <div class="character" onclick="selectCharacter(2)">
+      <img src="characters/player_green.png" alt="Green">
+      <div>Zelený</div>
+    </div>
+    <div class="character" onclick="selectCharacter(3)">
+      <img src="characters/player_yellow.png" alt="Yellow">
+      <div>Žlutý</div>
+    </div>
+  </div>
+
+  <div id="gameArea">
+    <h2>Hraje hráč <span id="playerNum">1</span></h2>
+    <div><img id="playerAvatar" src="characters/player_red.png" width="64" height="64" /></div>
+    <div id="treasureDisplay">Tvůj poklad: ⚔️ 🛡️ 💎 📜 🗝️ 🍷</div>
+    <button id="endTurnBtn" onclick="endTurn()">Ukončit tah</button>
+  </div>
+
+  <script>
+    const loadingScreen = document.getElementById('loadingScreen');
+    const characterSelect = document.getElementById('characterSelect');
+    const gameArea = document.getElementById('gameArea');
+    const treasureDisplay = document.getElementById('treasureDisplay');
+    const playerNum = document.getElementById('playerNum');
+    const playerAvatar = document.getElementById('playerAvatar');
+
+    const players = [
+      { name: "Červený", avatar: "characters/player_red.png", treasures: ["⚔️", "🛡️", "💎", "📜", "🗝️", "🍷"] },
+      { name: "Modrý", avatar: "characters/player_blue.png", treasures: ["📖", "🧭", "🔮", "🎒", "🗺️", "🕯️"] },
+      { name: "Zelený", avatar: "characters/player_green.png", treasures: ["🔑", "🍇", "🪙", "🧱", "🪓", "💼"] },
+      { name: "Žlutý", avatar: "characters/player_yellow.png", treasures: ["🏺", "📦", "🧤", "🕳️", "💰", "🔋"] }
+    ];
+
+    let currentPlayer = 0;
+
+    loadingScreen.addEventListener("click", () => {
+      loadingScreen.style.display = "none";
+      characterSelect.style.display = "block";
+    });
+
+    function selectCharacter(index) {
+      currentPlayer = index;
+      characterSelect.style.display = "none";
+      gameArea.style.display = "block";
+      updateUI();
+    }
+
+    function updateUI() {
+      playerNum.textContent = currentPlayer + 1;
+      playerAvatar.src = players[currentPlayer].avatar;
+      treasureDisplay.textContent = "Tvůj poklad: " + players[currentPlayer].treasures.join(" ");
+    }
+
+    function endTurn() {
+      gameArea.style.display = "none";
+      setTimeout(() => {
+        currentPlayer = (currentPlayer + 1) % players.length;
+        updateUI();
+        gameArea.style.display = "block";
+      }, 5000);
+    }
+  </script>
+
+<script>
+const gridSize = 7;
+const fixedTiles = {
+  "0,0": "corner_tl.png", "0,2": "tee_down.png", "0,4": "tee_down.png", "0,6": "corner_tr.png",
+  "2,0": "tee_right.png", "2,2": "cross.png", "2,4": "cross.png", "2,6": "tee_left.png",
+  "4,0": "tee_right.png", "4,2": "cross.png", "4,4": "cross.png", "4,6": "tee_left.png",
+  "6,0": "corner_bl.png", "6,2": "tee_up.png", "6,4": "tee_up.png", "6,6": "corner_br.png"
+};
+const tileTypes = [
+  "straight_h.png", "straight_v.png", "corner_tl.png", "corner_tr.png",
+  "corner_bl.png", "corner_br.png", "tee_up.png", "tee_down.png",
+  "tee_left.png", "tee_right.png", "cross.png"
+];
+const excludedPositions = ["0,0", "0,6", "6,0", "6,6"]; // hráčské starty
+const allTreasures = Array.from({length: 24}, (_, i) => "t" + (i+1) + ".png");
+
+function generateLabyrinthGrid() {
+  const grid = [];
+  for (let y = 0; y < gridSize; y++) {
+    const row = [];
+    for (let x = 0; x < gridSize; x++) {
+      const key = x + "," + y;
+      let tile = fixedTiles[key] || tileTypes[Math.floor(Math.random() * tileTypes.length)];
+      row.push({tile, treasure: null});
+    }
+    grid.push(row);
+  }
+
+  // Náhodné umístění 24 pokladů na průchozí dlaždice mimo rohy
+  const validPositions = [];
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const key = x + "," + y;
+      if (!excludedPositions.includes(key)) validPositions.push({x, y});
+    }
+  }
+  shuffle(validPositions);
+  for (let i = 0; i < allTreasures.length; i++) {
+    const pos = validPositions[i];
+    grid[pos.y][pos.x].treasure = allTreasures[i];
+  }
+
+  renderGrid(grid);
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function renderGrid(grid) {
+  const container = document.createElement("div");
+  container.style.display = "grid";
+  container.style.gridTemplateColumns = "repeat(7, 72px)";
+  container.style.margin = "30px auto";
+  container.style.width = "504px";
+
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const cell = grid[y][x];
+      const div = document.createElement("div");
+      div.style.position = "relative";
+      const img = document.createElement("img");
+      img.src = "tiles/" + cell.tile;
+      img.style.width = "72px";
+      img.style.height = "72px";
+      img.style.imageRendering = "pixelated";
+      div.appendChild(img);
+      if (cell.treasure) {
+        const treasure = document.createElement("img");
+        treasure.src = "treasures/" + cell.treasure;
+        treasure.style.position = "absolute";
+        treasure.style.left = "22px";
+        treasure.style.top = "22px";
+        treasure.style.width = "28px";
+        div.appendChild(treasure);
+      }
+      container.appendChild(div);
+    }
+  }
+
+  const target = document.getElementById("gameArea");
+  target.appendChild(container);
+}
+
+// Spustíme po výběru postavičky
+function startGame(character) {
+  characterSelect.style.display = "none";
+  gameArea.style.display = "block";
+  generateLabyrinthGrid();
+  updateUI();
+}
+</script>
+
+</body>
+</html>
